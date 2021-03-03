@@ -45,7 +45,7 @@ public class Main {
                 }
             }
             world.c.update();
-            Thread.sleep(1000 / 45);
+            Thread.sleep(1000 / 60);
             frame.repaint();
         }
     }

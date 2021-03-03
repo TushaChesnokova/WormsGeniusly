@@ -43,19 +43,24 @@ public class Controller implements MouseListener, MouseMotionListener {
 
                     }
                     keys.put(e.getKeyCode(), true);
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD1)) {
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD7)) {
                         counter = 2;
                         world.bombB = true;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD2)) {
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD8)) {
                         world.teleportB = true;
                         counter = 2;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD3)) {
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD9)) {
                         counter = 2;
                         world.poisonB = true;
+                        world.weapon = false;
+                    }
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD4)) {
+                        counter = 2;
+                        world.arrowB = true;
                         world.weapon = false;
                     }
                 }
@@ -108,7 +113,7 @@ public class Controller implements MouseListener, MouseMotionListener {
         if ((e.getX() >= world.bomb.weaponX)
                 && (e.getX() <= world.bomb.weaponX + world.weaponWidth)
                 && (e.getY() >= world.bomb.weaponY)
-                && (e.getY() <= world.bomb.weaponX + world.weaponHeight)) {
+                && (e.getY() <= world.bomb.weaponY + world.weaponHeight)) {
             world.weapon = false;
             world.bombB = true;
             counter++;
@@ -123,10 +128,16 @@ public class Controller implements MouseListener, MouseMotionListener {
                 world.move = Team.GIRL;
             }
         }
+        if (world.arrowB) {
+            counter++;
+            world.arrow.y = e.getY();
+            world.arrowB = false;
+            world.arrowR = true;
+        }
         if ((e.getX() >= world.teleport.weaponX)
                 && (e.getX() <= world.teleport.weaponX + world.teleport.width)
                 && (e.getY() >= world.teleport.weaponY)
-                && (e.getY() <= world.teleport.weaponX + world.teleport.height)) {
+                && (e.getY() <= world.teleport.weaponY + world.teleport.height)) {
             world.weapon = false;
             world.teleportB = true;
         }
@@ -145,9 +156,16 @@ public class Controller implements MouseListener, MouseMotionListener {
         if ((e.getX() >= world.poison.weaponX)
                 && (e.getX() <= world.poison.weaponX + world.poison.width)
                 && (e.getY() >= world.poison.weaponY)
-                && (e.getY() <= world.poison.weaponX + world.poison.height)) {
+                && (e.getY() <= world.poison.weaponY + world.poison.height)) {
             world.weapon = false;
             world.poisonB = true;
+        }
+        if ((e.getX() >= world.arrow.weaponX)
+                && (e.getX() <= world.arrow.weaponX + world.weaponWidth)
+                && (e.getY() >= world.arrow.weaponY)
+                && (e.getY() <= world.arrow.weaponY-10 + world.weaponHeight)) {
+            world.weapon = false;
+            world.arrowB = true;
         }
     }
 
@@ -184,6 +202,7 @@ public class Controller implements MouseListener, MouseMotionListener {
     }
 
     //проверяем от start до end включительно
+    // (Нижняя пустая точка, нашли или нет)
     public Pair<Integer, Boolean> findSurface(int x, int start, int end) {
         for (int y = start; y <= end; y++) {
             if (world.landscape.bool[x][y]) {
@@ -204,10 +223,10 @@ public class Controller implements MouseListener, MouseMotionListener {
                 Pair<Integer, Boolean> y2 = findSurface(
                         (int) world.worms[i].x + world.worms[i].width / 2,
                         (int) (world.worms[i].y) + world.worms[i].height,
-                        (int) (world.worms[i].y + world.worms[i].v) + world.worms[i].height);
-                if (!y2.getValue())
+                        (int) (world.worms[i].y + world.worms[i].v) + world.worms[i].height+1);
+                if (!y2.getValue() || y2.getKey() > world.worms[i].y + world.worms[i].height) {
                     world.worms[i].v = world.worms[i].v + G;
-                else {
+                }else {
                     world.worms[i].v = 0;
                 }
                 world.worms[i].y = y2.getKey() - world.worms[i].height;
@@ -256,7 +275,7 @@ public class Controller implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseMoved(MouseEvent e) {//двигаю
-        if ((world.bombB) || (world.teleportB)) {
+        if ((world.bombB) || (world.teleportB||(world.arrowB))) {
             world.target.x = e.getX() - world.target.width / 2;
             world.target.y = e.getY() - world.target.width / 2;
         }

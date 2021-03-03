@@ -9,7 +9,7 @@ import java.io.IOException;
 
 public class World extends JPanel {
     int random;
-    int dt=0;
+    int dt = 0;
     int weaponX = 820;
     int weaponY = 30;
     int weaponWidth = 40;
@@ -21,13 +21,16 @@ public class World extends JPanel {
     Bomb bomb = new Bomb(this);
     Teleport teleport = new Teleport(this);
     boolean bombB = false;
+    boolean arrowB = false;
     boolean teleportB = false;
     boolean poisonB = false;
+    boolean arrowR = false;
     Worm controllerWorm = new Worm(0, 0);
     Worm[] worms = new Worm[n];
     Poison poison = new Poison(this);
     Poison[] poisonM = new Poison[3];
     BufferedImage landscapeImage;
+    BufferedImage arrowImage;
     Landscape landscape;
     BufferedImage wormGirlImage;
     BufferedImage wormBoyImage;
@@ -51,6 +54,7 @@ public class World extends JPanel {
     double distance;
     Team move = Team.GIRL;//девочки ходят первые и выигрывают
     Controller c = new Controller(this);
+    Arrow arrow = new Arrow(this);
 
     public World(int windowWidth, int windowHeight) throws IOException {
         this.landscapeImage = ImageIO.read(new File("Ландшафт.jpg"));
@@ -67,46 +71,46 @@ public class World extends JPanel {
         this.boyChosenImage = ImageIO.read(new File("boyChosen.png"));
         this.teleportImage = ImageIO.read(new File("телепорт.png"));
         this.poisonImage = ImageIO.read(new File("яд.png"));
-        ;
+        this.arrowImage = ImageIO.read(new File("стрела.png"));
         this.windowWidth = windowWidth;
         this.windowHeight = windowHeight;
-        xPoints = new int[windowWidth/2+2];
-        yPoints = new int[windowWidth/2+2];
-        x2Points = new int[windowWidth/2+2];
-        y2Points = new int[windowWidth/2+2];
+        xPoints = new int[windowWidth / 2 + 2];
+        yPoints = new int[windowWidth / 2 + 2];
+        x2Points = new int[windowWidth / 2 + 2];
+        y2Points = new int[windowWidth / 2 + 2];
         for (int i = 0; i < n; i++) {
             worms[i] = new Worm((Math.random() * (landscape.width - worms[i].height) + 100), windowHeight - landscape.height - worms[i].height - 100);
         }
         landscape = new Landscape(windowWidth, windowHeight);
-        for(int i=0; i<windowWidth/2; i++){
-            xPoints[i]=i*2;
-            yPoints[i]=650+(int)(Math.sin(xPoints[i]/5.0/Math.PI)*10);
-            x2Points[i]=i*2;
-            y2Points[i]=650+(int)(Math.sin(xPoints[i]/5.0/Math.PI)*10);
+        for (int i = 0; i < windowWidth / 2; i++) {
+            xPoints[i] = i * 2;
+            yPoints[i] = 650 + (int) (Math.sin(xPoints[i] / 5.0 / Math.PI) * 10);
+            x2Points[i] = i * 2;
+            y2Points[i] = 650 + (int) (Math.sin(xPoints[i] / 5.0 / Math.PI) * 10);
         }
-        xPoints[windowWidth/2]=windowWidth;
-        xPoints[windowWidth/2+1]=0;
-        yPoints[windowWidth/2]=windowHeight;
-        yPoints[windowWidth/2+1]=windowHeight;
-        x2Points[windowWidth/2]=windowWidth;
-        x2Points[windowWidth/2+1]=0;
-        y2Points[windowWidth/2]=windowHeight;
-        y2Points[windowWidth/2+1]=windowHeight;
+        xPoints[windowWidth / 2] = windowWidth;
+        xPoints[windowWidth / 2 + 1] = 0;
+        yPoints[windowWidth / 2] = windowHeight;
+        yPoints[windowWidth / 2 + 1] = windowHeight;
+        x2Points[windowWidth / 2] = windowWidth;
+        x2Points[windowWidth / 2 + 1] = 0;
+        y2Points[windowWidth / 2] = windowHeight;
+        y2Points[windowWidth / 2 + 1] = windowHeight;
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        for(int i=0; i<windowWidth/2; i++){
-            xPoints[i]=i*2;
-            yPoints[i]=650+(int)(Math.sin(xPoints[i]/5.0/Math.PI+dt/20.0)*10);
-            x2Points[i]=i*2;
-            y2Points[i]= (int) (650+(Math.sin(xPoints[i]/5.0/Math.PI+dt/10.0)*10)+Math.sin(dt/5/Math.PI)*20);
+        for (int i = 0; i < windowWidth / 2; i++) {
+            xPoints[i] = i * 2;
+            yPoints[i] = 650 + (int) (Math.sin(xPoints[i] / 5.0 / Math.PI + dt / 20.0) * 10);
+            x2Points[i] = i * 2;
+            y2Points[i] = (int) (650 + (Math.sin(xPoints[i] / 5.0 / Math.PI + dt / 10.0) * 10) + Math.sin(dt / 5 / Math.PI) * 20);
         }
         g.drawImage(backgroundImage, 0, 0, windowWidth, windowHeight, null);
         if (move == Team.GIRL) {
-            g.drawImage(girlImage, 910, 620, 80, 40, null);
+            g.drawImage(girlImage, 910, 580, 80, 40, null);
         } else {
-            g.drawImage(boyImage, 910, 620, 80, 40, null);
+            g.drawImage(boyImage, 910, 580, 80, 40, null);
         }
         g.drawImage(weaponImage, weaponX - 750, weaponY, weaponWidth, weaponWidth, null);
         for (int i = 0; i < windowWidth; i += 1) {
@@ -149,6 +153,7 @@ public class World extends JPanel {
             g.drawImage(bombImage, bomb.weaponX, bomb.weaponY, weaponWidth, weaponHeight, null);
             g.drawImage(teleportImage, teleport.weaponX, teleport.weaponY, teleport.width, teleport.height, null);
             g.drawImage(poisonImage, poison.weaponX, poison.weaponY, poison.width, poison.height, null);
+            g.drawImage(arrowImage, arrow.weaponX, arrow.weaponY, weaponWidth, weaponHeight / 4, null);
         }
         if (bombB) {
             g.drawImage(targetImage, target.x, target.y, target.width, target.width, null);
@@ -210,7 +215,6 @@ public class World extends JPanel {
                 poisonB = false;
                 poisonR = true;
                 poisonM[i].dt = 0;
-                System.out.println("hm");
             }
             for (int i = 0; i < 3; i++) {
                 poisonM[i].y = 0 + c.G * poisonM[i].dt;
@@ -243,8 +247,24 @@ public class World extends JPanel {
             }
             controllerWorm = new Worm(0, 0);
         }
-        //g.fillPolygon(xPoints, yPoints, windowWidth/2+2);
-        g.fillPolygon(x2Points, y2Points, windowWidth/2+2);
+        Color color = new Color(10, 94, 193, 255);
+        g.setColor(color);
+        g.fillPolygon(x2Points, y2Points, windowWidth / 2 + 2);
+        color = new Color(4, 70, 151, 255);
+        g.setColor(color);
+        g.fillPolygon(xPoints, yPoints, windowWidth / 2 + 2);
+        if (arrowB) {
+            g.drawLine(0, target.y, windowWidth, target.y);
+        }
+        if (arrowR) {
+            g.drawImage(arrowImage, arrow.x, arrow.y, arrow.width, arrow.height, null);
+            arrow.x++;
+            for (int i = 0; i < controllerWorm.width; i++) {
+                for (int j = 0; j < n; j++) {
+                    if ((arrow.x == worms[j].x)&&(arrow.y+arrow.height/2>worms[j].y));
+                }
+            }
+        }
     }
 }
 
