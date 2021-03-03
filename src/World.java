@@ -261,7 +261,7 @@ public class World extends JPanel {
             arrow.x++;
             for (int i = 0; i < controllerWorm.width; i++) {
                 for (int j = 0; j < n; j++) {
-                    if ((arrow.x == worms[j].x)&&(arrow.y+arrow.height/2>worms[j].y));
+                    if ((arrow.x == worms[j].x)&&(arrow.y+arrow.height/2>worms[j].y)&&(arrow.y+arrow.height/2<worms[j].y+worms[i].height));
                 }
             }
         }
