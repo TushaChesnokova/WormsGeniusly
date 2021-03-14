@@ -1,5 +1,3 @@
-import javafx.util.Pair;
-
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -14,8 +12,6 @@ public class Controller implements MouseListener, MouseMotionListener {
     boolean controllerTry = false;
     int k = -1;
     int random1;
-    int random2;
-    int random3;
     int counter = 0;
     public static final double G = 0.3;
 
@@ -63,6 +59,16 @@ public class Controller implements MouseListener, MouseMotionListener {
                         world.arrowB = true;
                         world.weapon = false;
                     }
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD5)) {
+                        counter = 2;
+                        world.hillB = true;
+                        world.weapon = false;
+                    }
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD6)) {
+                        counter = 2;
+                        world.pluralHillB = true;
+                        world.weapon = false;
+                    }
                 }
                 if (e.getID() == KeyEvent.KEY_RELEASED) {
                     keys.put(e.getKeyCode(), false);
@@ -90,10 +96,10 @@ public class Controller implements MouseListener, MouseMotionListener {
                 && (e.getX() <= world.weaponX - 750 + world.weaponWidth)
                 && (e.getY() >= world.weaponY)
                 && (e.getY() <= world.weaponY + world.weaponWidth)) {
-            if ((world.controllerWorm.x!=0)&&(world.controllerWorm.y!=0)) {
+            if ((world.controllerWorm.x != 0) && (world.controllerWorm.y != 0)) {
                 world.weapon = true;
-            }
-            else{
+                counter = 0;
+            } else {
                 controllerTry = true;
             }
         }
@@ -102,7 +108,6 @@ public class Controller implements MouseListener, MouseMotionListener {
 
     @Override
     public void mousePressed(MouseEvent e) {
-
         if (world.bombB) {
             counter++;
             world.bomb.x = e.getX();
@@ -163,9 +168,28 @@ public class Controller implements MouseListener, MouseMotionListener {
         if ((e.getX() >= world.arrow.weaponX)
                 && (e.getX() <= world.arrow.weaponX + world.weaponWidth)
                 && (e.getY() >= world.arrow.weaponY)
-                && (e.getY() <= world.arrow.weaponY-10 + world.weaponHeight)) {
+                && (e.getY() <= world.arrow.weaponY - 10 + world.weaponHeight)) {
             world.weapon = false;
             world.arrowB = true;
+        }
+        if ((e.getX() >= world.hill.weaponX)
+                && (e.getX() <= world.hill.weaponX + world.weaponWidth)
+                && (e.getY() >= world.hill.weaponY)
+                && (e.getY() <= world.hill.weaponY + world.weaponHeight)) {
+            world.weapon = false;
+            world.hillB = true;
+        }
+        if ((e.getX() >= world.pluralHill.weaponXP)
+                && (e.getX() <= world.pluralHill.weaponXP + world.weaponWidth)
+                && (e.getY() >= world.pluralHill.weaponYP)
+                && (e.getY() <= world.pluralHill.weaponYP + world.weaponHeight)) {
+            world.weapon = false;
+            world.pluralHillB = true;
+        } else if ((world.pluralHillB)) {
+            world.pluralHill.hillX = e.getX();
+            world.pluralHill.hillY = e.getY();
+            world.pluralHillB = false;
+            world.pluralHillR = true;
         }
     }
 
@@ -205,33 +229,43 @@ public class Controller implements MouseListener, MouseMotionListener {
     // (Нижняя пустая точка, нашли или нет)
     public Pair<Integer, Boolean> findSurface(int x, int start, int end) {
         for (int y = start; y <= end; y++) {
-            if (world.landscape.bool[x][y]) {
+            if ((world.landscape.bool.length > x)
+                    && (x >= 0)
+                    && (world.landscape.bool[x].length > y)
+                    && (y >= 0)
+                    && (world.landscape.bool[x][y])) {
                 return new Pair<>(y - 1, true);
             }
         }
         return new Pair<>(end, false);
     }
 
+
     public void update() {
         for (int i = 0; i < world.n; i++) {
             if ((world.worms[i].y + world.worms[i].v >= world.windowHeight - world.controllerWorm.height)
-                    || (world.controllerWorm.x + 2 + world.controllerWorm.width >= world.windowWidth)
+                    || (world.worms[i].x + 2 + world.worms[i].width >= world.windowWidth)
                     || (world.worms[i].x - 2 <= 0)) {
-                world.worms[i].health = 0;
+                if (world.worms[i].health != 0) {
+                    world.watered = true;
+                    world.worms[i].health = 0;
+                }
             } else if (world.worms[i].health != 0) {
 
                 Pair<Integer, Boolean> y2 = findSurface(
                         (int) world.worms[i].x + world.worms[i].width / 2,
                         (int) (world.worms[i].y) + world.worms[i].height,
-                        (int) (world.worms[i].y + world.worms[i].v) + world.worms[i].height+1);
+                        (int) (world.worms[i].y + world.worms[i].v) + world.worms[i].height + 1);
                 if (!y2.getValue() || y2.getKey() > world.worms[i].y + world.worms[i].height) {
                     world.worms[i].v = world.worms[i].v + G;
-                }else {
+                } else {
                     world.worms[i].v = 0;
                 }
                 world.worms[i].y = y2.getKey() - world.worms[i].height;
             }
         }
+
+
         if (keys.containsKey(KeyEvent.VK_RIGHT)) {
             if (keys.get(KeyEvent.VK_RIGHT)) {
                 if ((world.controllerWorm.health != 0)
@@ -275,9 +309,7 @@ public class Controller implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseMoved(MouseEvent e) {//двигаю
-        if ((world.bombB) || (world.teleportB||(world.arrowB))) {
-            world.target.x = e.getX() - world.target.width / 2;
-            world.target.y = e.getY() - world.target.width / 2;
-        }
+        world.target.x = e.getX() - world.target.width / 2;
+        world.target.y = e.getY() - world.target.width / 2;
     }
 }

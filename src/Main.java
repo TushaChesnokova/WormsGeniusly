@@ -15,21 +15,58 @@ public class Main {
         frame.addMouseMotionListener(world.c);
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        while (true) {
+
+        new Thread(() -> {
+            while (true) {
+                if (world.killed) {
+                    new MakeSound().playSound("Убит.wav");
+                    world.killed = false;
+                    world.impostor = false;
+                    world.notImpostor = false;
+                } else if (world.impostor) {
+                    new MakeSound().playSound("Предатель.wav");
+                    world.impostor = false;
+                    world.notImpostor = false;
+                } else if (world.notImpostor) {
+                    new MakeSound().playSound("Ой.wav");
+                    world.notImpostor = false;
+                }
+                if (world.watered) {
+                    new MakeSound().playSound("Бултых.wav");
+                    world.watered = false;
+                }
+                if (world.isOver) new MakeSound().playSound("Гейм Овер.wav");
+                if (world.muff) {
+                    new MakeSound().playSound("Промазал.wav");
+                    world.muff = false;
+                }
+                if (world.lucky){
+                    new MakeSound().playSound("Повезло.wav");
+                    world.lucky= false;
+                }
+               try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+
+        while (!world.isOver) {
             world.dt++;
             for (int i = 0; i < world.n; i++) {
                 world.worms[i].dt++;
             }
             world.bomb.dt++;
-            for(int i=0; i<3; i++)
-                if(world.poisonM[i] != null)
+            for (int i = 0; i < 3; i++)
+                if (world.poisonM[i] != null)
                     world.poisonM[i].dt++;
-           if( world.bomb.rectPressed == true) {
+            if (world.bomb.rectPressed == true) {
                 world.bomb.rectX++;
-                if(world.bomb.rectX>=world.bomb.rectWidth){
-                    world.bomb.rectPressed=false;
-                    world.bomb.v= world.bomb.maxv*(world.bomb.rectX*1.0/world.bomb.rectWidth);
-                    world.bomb.rectX=0;
+                if (world.bomb.rectX >= world.bomb.rectWidth) {
+                    world.bomb.rectPressed = false;
+                    world.bomb.v = world.bomb.maxv * (world.bomb.rectX * 1.0 / world.bomb.rectWidth);
+                    world.bomb.rectX = 0;
                     world.bombB = false;
                     world.bomb.realised = true;
                     world.target.catetS = world.bomb.y + world.target.width / 2 - world.controllerWorm.y;
