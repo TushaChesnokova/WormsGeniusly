@@ -4,8 +4,8 @@ public class Arrow {
     int y;
     int weaponX;
     int weaponY;
-    int width = 120;
-    int height = 20;
+    public static final int WIDTH = 120;
+    public static final int HEIGHT = 20;
     public Arrow(World world) {
         this.world = world;
         weaponX = world.weaponX+5;

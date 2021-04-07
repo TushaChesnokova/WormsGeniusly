@@ -9,6 +9,6 @@ public class Poison {
     int x;
     int weaponY;
     double y=0;
-    public static final int width=35;
-    public static final int height=50;
+    public static final int WIDTH =35;
+    public static final int HEIGHT =50;
 }

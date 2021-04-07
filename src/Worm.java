@@ -1,9 +1,10 @@
 public class Worm {
     Team team;
     Direction direction = Direction.LEFT;
-    int health = 100;
-    public static final int width = 40;
-    public static final int height = 35;
+    public static final int START_HEALTH = 100;
+    int health = START_HEALTH;
+    public static final int WIDTH = 40;
+    public static final int HEIGHT = 35;
     double x;
     double v;
     double dt;

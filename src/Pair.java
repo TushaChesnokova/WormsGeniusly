@@ -1,11 +1,11 @@
-public class Pair<T, B>{
-    T A;
+public class Pair<A, B>{
+    A A;
     B B;
-    Pair(T a, B b){
+    Pair(A a, B b){
         A = a;
         B = b;
     }
-    public T getKey(){
+    public A getKey(){
         return A;
     }
     public B getValue(){

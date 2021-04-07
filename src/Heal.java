@@ -1,16 +1,16 @@
-public class Hill {
-    int pluralHill = 10;
-    int hill = 20;
+public class Heal {
+    int pluralHeal = 10;
+    int heal = 20;
     World world;
     int width = 27;
     int height = 20;
-    int hillX;
-    int hillY;
+    int healX;
+    int healY;
     int weaponX;
     int weaponY;
     int weaponXP;
     int weaponYP;
-    public Hill(World world) {
+    public Heal(World world) {
         this.world = world;
         weaponX=world.weaponX + 5 + world.weaponWidth;
         weaponY = world.weaponY+world.weaponHeight+10;

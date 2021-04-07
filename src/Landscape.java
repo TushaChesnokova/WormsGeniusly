@@ -3,9 +3,9 @@ import javax.swing.*;
 public class Landscape extends JPanel {
     int windowHeight;
     int windowWidth;
-    public static final int width = 800;
-    public static final int height = 400;
-    Boolean[][] bool;
+    public static final int WIDTH = 800;
+    public static final int HEIGHT = 400;
+    boolean[][] landscape;
     int randomX;
     int randomY;
     int randomR;
@@ -14,15 +14,15 @@ public class Landscape extends JPanel {
     public Landscape(int windowWidth, int windowHeight) {
         this.windowHeight = windowHeight;
         this.windowWidth = windowWidth;
-        bool = new Boolean[windowWidth][windowWidth];
+        landscape = new boolean[windowWidth][windowWidth];
         for (int i = 0; i < windowWidth; i++) {
             for (int j = 0; j < windowHeight; j++) {
-                bool[i][j] = false;
+                landscape[i][j] = false;
             }
         }
-        for (int i = 100; i < width + 100; i++) {
-            for (int j = windowHeight; j > windowHeight - height; j = j - 1) {
-                bool[i][j] = true;
+        for (int i = 100; i < WIDTH + 100; i++) {
+            for (int j = windowHeight; j > windowHeight - HEIGHT; j = j - 1) {
+                landscape[i][j] = true;
             }
         }
         for (int k = 0; k < 20; k++) {
@@ -32,8 +32,8 @@ public class Landscape extends JPanel {
             for (int i = randomX - randomR; i < randomX + randomR; i++) {
                 for (int j = randomY - randomR; j < randomY + randomR; j++) {
                     distance = Math.sqrt(Math.pow((randomX - i), 2) + Math.pow((randomY - j), 2));
-                    if ((distance < randomR) && (bool[i][j])) {
-                        bool[i][j] = false;
+                    if ((distance < randomR) && (landscape[i][j])) {
+                        landscape[i][j] = false;
                     }
                 }
             }

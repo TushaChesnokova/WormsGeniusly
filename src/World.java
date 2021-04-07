@@ -4,8 +4,19 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 public class World extends JPanel {
+    boolean teleportR = false;
+    boolean startClicked = false;
+    double windV;
+    public static final double MAX_WIND = 3;
+    boolean start = true;
+    public static final int MOVE_TIME = 60;
+    int time;
+    int startTime;
+    int summarGirlHealth = 0;
+    int summarBoyHealth = 0;
     boolean muff = false;
     boolean lucky = false;
     boolean impostor = false;
@@ -19,26 +30,24 @@ public class World extends JPanel {
     int weaponY = 30;
     int weaponWidth = 40;
     int weaponHeight = 50;
-    int n = 8;
+    int n = 20;
     boolean poisonR = false;
     boolean weapon = false;
     Target target = new Target();
     Bomb bomb = new Bomb(this);
     Teleport teleport = new Teleport(this);
     boolean bombB = false;
-    boolean hillB = false;
-    boolean pluralHillB = false;
+    boolean healB = false;
+    boolean pluralHealB = false;
     boolean arrowB = false;
     boolean teleportB = false;
     boolean poisonB = false;
     boolean arrowR = false;
-    boolean hillR = false;
-    boolean pluralHillR = false;
+    boolean pluralHealR = false;
     Worm controllerWorm = new Worm(0, 0);
     Worm[] worms = new Worm[n];
     Poison poison = new Poison(this);
-    Poison[] poisonM = new Poison[3];
-    BufferedImage landscapeImage;
+    Poison[] poisonA = new Poison[3];
     BufferedImage arrowImage;
     Landscape landscape;
     BufferedImage wormGirlImage;
@@ -54,23 +63,30 @@ public class World extends JPanel {
     BufferedImage boyChosenImage;
     BufferedImage teleportImage;
     BufferedImage poisonImage;
-    BufferedImage hillImage;
-    BufferedImage pluralHillImage;
+    BufferedImage healImage;
+    BufferedImage pluralHealImage;
+    BufferedImage girlsWonImage;
+    BufferedImage boysWonImage;
+    BufferedImage startImage;
+    BufferedImage windImage;
     int windowHeight;
     int windowWidth;
     int[] xPoints;
-    int[] yPoints;
+    int[] yPoints;//координаты для первой волны
     int[] x2Points;
-    int[] y2Points;
+    int[] y2Points;//координаты для второй волны
     double distance;
     Team move = Team.GIRL;//девочки ходят первые и выигрывают
     Controller c = new Controller(this);
     Arrow arrow = new Arrow(this);
-    Hill hill = new Hill(this);
-    Hill pluralHill = new Hill(this);
+    Heal heal = new Heal(this);
+    Heal pluralHeal = new Heal(this);
 
     public World(int windowWidth, int windowHeight) throws IOException {
-        this.landscapeImage = ImageIO.read(new File("Ландшафт.jpg"));
+        this.windImage = ImageIO.read(new File("ветер.png"));
+        this.startImage = ImageIO.read(new File("start.jpg"));
+        this.girlsWonImage = ImageIO.read(new File("The girls won.png"));
+        this.boysWonImage = ImageIO.read(new File("The boys won.png"));
         this.wormGirlImage = ImageIO.read(new File("Girl.png"));
         this.wormBoyImage = ImageIO.read(new File("Boy.png"));
         this.bombImage = ImageIO.read(new File("бомба.png"));
@@ -85,8 +101,8 @@ public class World extends JPanel {
         this.teleportImage = ImageIO.read(new File("телепорт.png"));
         this.poisonImage = ImageIO.read(new File("яд.png"));
         this.arrowImage = ImageIO.read(new File("стрела.png"));
-        this.hillImage = ImageIO.read(new File("аптечка.png"));
-        this.pluralHillImage = ImageIO.read(new File("аптечка1.png"));
+        this.healImage = ImageIO.read(new File("аптечка.png"));
+        this.pluralHealImage = ImageIO.read(new File("аптечка1.png"));
         this.windowWidth = windowWidth;
         this.windowHeight = windowHeight;
         xPoints = new int[windowWidth / 2 + 2];
@@ -94,7 +110,12 @@ public class World extends JPanel {
         x2Points = new int[windowWidth / 2 + 2];
         y2Points = new int[windowWidth / 2 + 2];
         for (int i = 0; i < n; i++) {
-            worms[i] = new Worm((Math.random() * (landscape.width - worms[i].height) + 100), windowHeight - landscape.height - worms[i].height - 100);
+            worms[i] = new Worm((Math.random() * (Landscape.WIDTH - Worm.HEIGHT) + 100), windowHeight - Landscape.HEIGHT - Worm.HEIGHT - 100);
+            if ((i % 2 == 0) && (worms[i].health > 0)) {
+                worms[i].team = Team.BOY;
+            } else {
+                worms[i].team = Team.GIRL;
+            }
         }
         landscape = new Landscape(windowWidth, windowHeight);
         for (int i = 0; i < windowWidth / 2; i++) {
@@ -115,11 +136,11 @@ public class World extends JPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        for (int i = 0; i < windowWidth / 2; i++) {
+        for (int i = 0; i < windowWidth / 2; i++) { // изменение координат волн
             xPoints[i] = i * 2;
             yPoints[i] = 650 + (int) (Math.sin(xPoints[i] / 5.0 / Math.PI + dt / 20.0) * 10);
             x2Points[i] = i * 2;
-            y2Points[i] = (int) (650 + (Math.sin(xPoints[i] / 5.0 / Math.PI + dt / 10.0) * 10) + Math.sin(dt / 5 / Math.PI) * 20);
+            y2Points[i] = (int) (650 + (Math.sin(xPoints[i] / 5.0 / Math.PI + dt / 10.0) * 10) + Math.sin(dt / 5.0 / Math.PI) * 20);
         }
         g.drawImage(backgroundImage, 0, 0, windowWidth, windowHeight, null);
         if (move == Team.GIRL) {
@@ -135,68 +156,74 @@ public class World extends JPanel {
                 g.drawImage(boyChosenImage, 200, 50, 300, 60, null);
             }
         }
-        for (int i = 0; i < windowWidth; i += 1) {
+        for (int i = 0; i < windowWidth; i += 1) { // отрисовка ландшафта
             for (int j = 0; j < windowHeight; j = j + 1) {
-                if (landscape.bool[i][j]) {
+                if (landscape.landscape[i][j]) {
                     g.setColor(new Color(165, 224, 255, 255));
                     g.drawLine(i, j, i, j);
                 }
             }
         }
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < n; i++) { // отрисовка чевряков
             if ((i % 2 == 0) && (worms[i].health > 0)) {
                 if (worms[i].direction == Direction.LEFT) {
-                    g.drawImage(wormBoyImage, (int) worms[i].x, (int) worms[i].y, worms[i].width, worms[i].height, null);
+                    g.drawImage(wormBoyImage, (int) worms[i].x, (int) worms[i].y, Worm.WIDTH, Worm.HEIGHT, null);
                 } else {
-                    g.drawImage(wormBoyImage, (int) worms[i].x + worms[i].width, (int) worms[i].y, -worms[i].width, worms[i].height, null);
+                    g.drawImage(wormBoyImage, (int) worms[i].x + Worm.WIDTH, (int) worms[i].y, -Worm.WIDTH, Worm.HEIGHT, null);
                 }
-                worms[i].team = Team.BOY;
             }
             if ((i % 2 != 0) && (worms[i].health > 0)) {
                 if (worms[i].direction == Direction.LEFT) {
-                    g.drawImage(wormGirlImage, (int) worms[i].x, (int) worms[i].y, worms[i].width, worms[i].height, null);
+                    g.drawImage(wormGirlImage, (int) worms[i].x, (int) worms[i].y, Worm.WIDTH, Worm.HEIGHT, null);
                 } else {
-                    g.drawImage(wormGirlImage, (int) worms[i].x + worms[i].width, (int) worms[i].y, -worms[i].width, worms[i].height, null);
+                    g.drawImage(wormGirlImage, (int) worms[i].x + Worm.WIDTH, (int) worms[i].y, -Worm.WIDTH, Worm.HEIGHT, null);
                 }
-                worms[i].team = Team.GIRL;
             }
             if (worms[i].health > 0) {
                 g.setColor(new Color(0, 0, 0, 255));
-                g.drawString(Integer.toString(worms[i].health), (int) worms[i].x + worms[i].width - 15, (int) worms[i].y);
+                g.drawString(Integer.toString(worms[i].health), (int) worms[i].x + Worm.WIDTH - 15, (int) worms[i].y);
             }
         }
-        if (weapon) {
+        if (weapon) { // отрисовка доски оружия
             g.drawImage(boardImage, weaponX, weaponY, 130, 200, null);
             g.drawImage(bombImage, bomb.weaponX, bomb.weaponY, weaponWidth, weaponHeight, null);
-            g.drawImage(teleportImage, teleport.weaponX, teleport.weaponY, teleport.width, teleport.height, null);
-            g.drawImage(poisonImage, poison.weaponX, poison.weaponY, poison.width, poison.height, null);
+            g.drawImage(teleportImage, teleport.weaponX, teleport.weaponY, Teleport.WIDTH, Teleport.HEIGHT, null);
+            g.drawImage(poisonImage, poison.weaponX, poison.weaponY, Poison.WIDTH, Poison.HEIGHT, null);
             g.drawImage(arrowImage, arrow.weaponX, arrow.weaponY, weaponWidth, weaponHeight / 4, null);
-            g.drawImage(hillImage, hill.weaponX, hill.weaponY, weaponWidth, (int) (weaponHeight / 1.5), null);
-            g.drawImage(pluralHillImage, hill.weaponXP, hill.weaponYP, weaponWidth, (int) (weaponHeight / 1.5), null);
+            g.drawImage(healImage, heal.weaponX, heal.weaponY, weaponWidth, (int) (weaponHeight / 1.5), null);
+            g.drawImage(pluralHealImage, heal.weaponXP, heal.weaponYP, weaponWidth, (int) (weaponHeight / 1.5), null);
         }
 
-        if (bombB) {
-            g.drawImage(targetImage, target.x, target.y, target.width, target.width, null);
-            g.drawImage(bombImage, (int) controllerWorm.x - bomb.width, (int) controllerWorm.y, bomb.width, bomb.width, null);
+        if (bombB) { // прямоугольник скорости бомбы
+            g.drawImage(targetImage, target.x, target.y, Target.SIZE, Target.SIZE, null);
+            g.drawImage(bombImage, (int) controllerWorm.x - Bomb.SIZE, (int) controllerWorm.y, Bomb.SIZE, Bomb.SIZE, null);
             Color color = new Color(255, 255, 255, 100);
             g.setColor(color);
-            g.fillRect(bomb.rectStartX, bomb.rectY, bomb.rectWidth, 40);
+            g.fillRect(bomb.rectStartX, Bomb.RECT_Y, bomb.rectWidth, 40);
             color = new Color(255, 255, 255, 255);
             g.setColor(color);
-            g.fillRect(bomb.rectStartX, bomb.rectY, bomb.rectX, 40);
+            g.fillRect(bomb.rectStartX, Bomb.RECT_Y, bomb.rectX, 40);
         }
-        if (bomb.realised) {
-            bomb.x = bomb.x + bomb.vx * bomb.dt;
-            bomb.y = bomb.y + bomb.vy * bomb.dt;
-            bomb.vy = bomb.vy + c.G;
-            if ((bomb.x > 0) && (bomb.x + bomb.width / 2 < windowWidth) && (bomb.y > 0) && (bomb.y + bomb.width / 2 < windowHeight)) {
-                g.drawImage(bombImage, (int) bomb.x, (int) bomb.y, bomb.width, bomb.width, null);
-                if ((landscape.bool[(int) bomb.x + bomb.width / 2][(int) bomb.y + bomb.width / 2])) {
-                    bomb.realised = false;
-                    bomb.explosion = true;
-                }
-            }
+        if ((bomb.rectPressed) && (bomb.rectX >= bomb.rectWidth)) { // расчитывание угла полета
+            bomb.rectPressed = false;
+            bomb.v = Bomb.MAX_V * (bomb.rectX * 1.0 / bomb.rectWidth);
+            bomb.rectX = 0;
+            bombB = false;
+            bomb.realised = true;
+            target.catetS = bomb.y + Target.SIZE / 2.0 - controllerWorm.y;
+            target.catetC = bomb.x + Target.SIZE / 2.0 - controllerWorm.x + Bomb.SIZE / 2.0;
+            target.hypotenuse = Math.sqrt(Math.pow(target.catetC, 2) + Math.pow(target.catetS, 2));
+            target.sin = target.catetS / target.hypotenuse;
+            target.cos = target.catetC / target.hypotenuse;
+            target.tg = target.catetS / target.catetC;
+            bomb.x = controllerWorm.x - Bomb.SIZE / 2.0;
+            bomb.y = controllerWorm.y;
             bomb.dt = 0;
+            bomb.vy = bomb.v * target.sin;
+            bomb.vx = bomb.v * target.cos;
+        }
+        if (bomb.realised) { // отрисовка при полете бомбы
+            g.drawImage(bombImage, (int) bomb.x, (int) bomb.y, Bomb.SIZE, Bomb.SIZE, null);
             if ((bomb.x <= 0)
                     || (bomb.x >= windowWidth)
                     || (bomb.y <= 0)
@@ -205,11 +232,11 @@ public class World extends JPanel {
                 bomb.explosion = true;
             }
         }
-        if (bomb.explosion) {
+        if (bomb.explosion) { // взрыв бомбы
             for (int i = 0; i < n; i++) {
-                distance = Math.sqrt(Math.pow((bomb.x - worms[i].x), 2) + Math.pow((bomb.y - worms[i].y), 2));
-                if (distance < bomb.radius) {
-                    worms[i].health = (int) (worms[i].health - bomb.health * (bomb.radius - distance) / bomb.radius);
+                distance = Math.sqrt(Math.pow((bomb.x+bomb.SIZE/2 - worms[i].x), 2) + Math.pow((bomb.y+bomb.SIZE/2 - worms[i].y), 2));
+                if (distance < Bomb.RADIUS) {
+                    worms[i].health = (int) (worms[i].health - Bomb.HEALTH * (Bomb.RADIUS - distance) / Bomb.RADIUS);
                     if (worms[i].team == move) {
                         impostor = true;
                     }
@@ -225,8 +252,8 @@ public class World extends JPanel {
             for (int i = 0; i < windowWidth; i++) {
                 for (int j = 0; j < windowHeight; j++) {
                     distance = Math.sqrt(Math.pow((bomb.x - i), 2) + Math.pow((bomb.y - j), 2));
-                    if ((distance < bomb.radius) && (landscape.bool[i][j])) {
-                        landscape.bool[i][j] = false;
+                    if ((distance < Bomb.RADIUS) && (landscape.landscape[i][j])) {
+                        landscape.landscape[i][j] = false;
                     }
                 }
             }
@@ -237,40 +264,46 @@ public class World extends JPanel {
                 move = Team.GIRL;
             }
             controllerWorm = new Worm(0, 0);
+            startTime = time;
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
+            }
         }
-        if (teleportB) {
-            g.drawImage(targetImage, target.x, target.y, target.width, target.width, null);
-            g.drawImage(teleportImage, (int) controllerWorm.x - bomb.width, (int) controllerWorm.y, teleport.drawWidth, teleport.drawHeight, null);
+        if (teleportB) { // выбор места активации телепорта
+            g.drawImage(targetImage, target.x, target.y, Target.SIZE, Target.SIZE, null);
+            g.drawImage(teleportImage, (int) controllerWorm.x - Bomb.SIZE, (int) controllerWorm.y, Teleport.DRAW_WIDTH, Teleport.DRAW_HEIGHT, null);
         }
-        if (poisonB) {
+        if (poisonB) { // отрисовка яда
             for (int i = 0; i < 3; i++) {
-                poisonM[i] = new Poison(this);
+                poisonA[i] = new Poison(this);
             }
             for (int i = 0; i < 3; i++) {
                 random = (int) (Math.random() * windowWidth);
-                poisonM[i].x = random;
+                poisonA[i].x = random;
                 poisonB = false;
                 poisonR = true;
-                poisonM[i].dt = 0;
+                poisonA[i].dt = 0;
             }
             for (int i = 0; i < 3; i++) {
-                poisonM[i].y = 0 + c.G * poisonM[i].dt;
+                poisonA[i].y = 0 + Controller.G * poisonA[i].dt;
             }
         }
-        if (poisonR) {
+        if (poisonR) { // полет яда
             for (int i = 0; i < 3; i++) {
-                g.drawImage(poisonImage, poisonM[i].x, (int) poisonM[i].y, poisonM[i].width, poisonM[i].height, null);
-                poisonM[i].y = 0 + c.G * Math.pow(poisonM[i].dt, 2) / 2;
-                if (landscape.bool[poisonM[i].x + poison.width / 2][(int) (poisonM[i].y + poison.height)]) {
+                g.drawImage(poisonImage, poisonA[i].x, (int) poisonA[i].y, Poison.WIDTH, Poison.HEIGHT, null);
+                poisonA[i].y = 0 + Controller.G * Math.pow(poisonA[i].dt, 2) / 2;
+                if (landscape.landscape[poisonA[i].x + Poison.WIDTH / 2][(int) (poisonA[i].y + Poison.HEIGHT)]) {
                     poisonR = false;
                     poison.explosion = true;
                 }
             }
         }
-        if (poison.explosion) {
+        if (poison.explosion) { // активация яда
             for (int i = 0; i < 3; i++) {
                 for (int a = 0; a < n; a++) {
-                    if ((worms[a].x + worms[a].width > poisonM[i].x - 5) && (worms[a].x < poisonM[i].x + poison.width + 5)) {
+                    if ((worms[a].x + Worm.WIDTH > poisonA[i].x - 5) && (worms[a].x < poisonA[i].x + Poison.WIDTH + 5)) {
                         worms[a].health = worms[a].health - 25;
                         if (worms[a].health <= 0) killed = true;
                     }
@@ -283,6 +316,12 @@ public class World extends JPanel {
                 move = Team.GIRL;
             }
             controllerWorm = new Worm(0, 0);
+            startTime = time;
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
+            }
         }
         Color color = new Color(10, 94, 193, 255);
         g.setColor(color);
@@ -290,17 +329,17 @@ public class World extends JPanel {
         color = new Color(4, 70, 151, 255);
         g.setColor(color);
         g.fillPolygon(xPoints, yPoints, windowWidth / 2 + 2);
-        if (arrowB) {
+        if (arrowB) { // отрисовка линии при выборе координаты полета стрелы
             arrow.x = 0;
             g.drawLine(0, target.y, windowWidth, target.y);
         }
-        if (arrowR) {
-            g.drawImage(arrowImage, arrow.x, arrow.y - arrow.height, arrow.width, arrow.height, null);
-            arrow.x = arrow.x + 30;
+        if (arrowR) { // полет стрелы
+            g.drawImage(arrowImage, arrow.x, arrow.y - arrow.HEIGHT, arrow.WIDTH, arrow.HEIGHT, null);
+            arrow.x = arrow.x + 70;
         }
-        if ((arrowR) && (arrow.x >= 970)) {
+        if ((arrowR) && (arrow.x >= 970)) { // забирание жизней от стрелы
             for (int j = 0; j < n; j++) {
-                if ((arrow.y - arrow.height > worms[j].y) && (arrow.y - arrow.height < worms[j].y + worms[j].height)) {
+                if ((arrow.y - arrow.HEIGHT > worms[j].y) && (arrow.y - arrow.HEIGHT < worms[j].y + Worm.HEIGHT)) {
                     worms[j].health = worms[j].health - 10;
                     if (worms[j].team == move) {
                         impostor = true;
@@ -321,57 +360,136 @@ public class World extends JPanel {
                 move = Team.GIRL;
             }
             controllerWorm = new Worm(0, 0);
+            startTime = time;
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
+            }
         }
         color = new Color(135, 6, 16, dt * 4 % 255);
         g.setColor(color);
         g.fillOval((int) controllerWorm.x + 5, (int) controllerWorm.y - 15, 10, 10);
-        if (pluralHillB) {
-            g.drawImage(targetImage, target.x, target.y, target.width, target.width, null);
+        if (pluralHealB) {
+            g.drawImage(targetImage, target.x, target.y, Target.SIZE, Target.SIZE, null);
         }
-        if (hillB) {
-            g.drawImage(hillImage, (int) controllerWorm.x, (int) controllerWorm.y, hill.width, hill.height, null);
+        if (healB) { // личная аптечка активирована
+            g.drawImage(healImage, (int) controllerWorm.x, (int) controllerWorm.y, heal.width, heal.height, null);
             if (dt % 10 == 0) {
                 lucky = true;
-                controllerWorm.health += hill.hill;
-                hillB = false;
+                controllerWorm.health += heal.heal;
+                healB = false;
                 if (move == Team.GIRL) {
                     move = Team.BOY;
                 } else {
                     move = Team.GIRL;
                 }
                 controllerWorm = new Worm(0, 0);
+                startTime = time;
+            }
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
             }
         }
-        if ((pluralHillR)) {
-            g.drawImage(pluralHillImage, pluralHill.hillX, pluralHill.hillY, pluralHill.width, pluralHill.height, null);
+        if ((pluralHealR)) { // общая аптечка активирована
+            g.drawImage(pluralHealImage, pluralHeal.healX, pluralHeal.healY, pluralHeal.width, pluralHeal.height, null);
             if (dt % 10 == 0) {
                 for (int a = 0; a < n; a++) {
-                    if ((worms[a].x + worms[a].width > pluralHill.hillX - 5)
-                            && (worms[a].x < pluralHill.hillX + poison.width + 5)
-                            && (worms[a].y + worms[a].height > pluralHill.hillY)
-                            && (worms[a].y < pluralHill.hillY + pluralHill.width)) {
-                        worms[a].health = worms[a].health + 10;
+                    if ((worms[a].x + Worm.WIDTH > pluralHeal.healX - 5)
+                            && (worms[a].x < pluralHeal.healX + Poison.WIDTH + 5)
+                            && (worms[a].y + Worm.HEIGHT > pluralHeal.healY)
+                            && (worms[a].y < pluralHeal.healY + pluralHeal.width)) {
+                        worms[a].health = worms[a].health + pluralHeal.pluralHeal;
                     }
                 }
                 lucky = true;
-                pluralHillR = false;
+                pluralHealR = false;
                 if (move == Team.GIRL) {
                     move = Team.BOY;
                 } else {
                     move = Team.GIRL;
                 }
                 controllerWorm = new Worm(0, 0);
+                startTime = time;
+            }
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
             }
         }
+        if (time >= startTime + MOVE_TIME) {
+            if (move == Team.GIRL) {
+                move = Team.BOY;
+            } else {
+                move = Team.GIRL;
+            }
+            controllerWorm = new Worm(0, 0);
+            startTime = time;
+            bombB = false;
+            teleportB = false;
+            arrowB = false;
+            pluralHealB = false;
+            weapon = false;
+            if (dt % 2 == 0) {
+                windV = Math.random() * MAX_WIND;
+            } else {
+                windV = -Math.random() * MAX_WIND;
+            }
+        }
+        g.setColor(new Color(255, 255, 255, 255));
+        if (windV > 0) {
+            g.drawImage(windImage, 965, 625, -25, 25, null);
+        }
+        if (windV < 0) {
+            g.drawImage(windImage, 940, 625, 25, 25, null);
+        }
+        g.fillRect(885, 655, 110, 20);
+        g.setColor(new Color(0, 0, 0, 255));
+        DecimalFormat df = new DecimalFormat("#.##");
+        String windsp = "wind speed = " + df.format(Math.abs(windV));
+        g.drawString(windsp, 890, 670);
+        g.drawRect(20, 650, 100, 20);
+        g.drawRect(20, 620, 100, 20);
+        g.setColor(new Color(203, 5, 148, 255));
+        summarGirlHealth = 0;
+        for (int i = 1; i < n; i += 2) {
+            if (worms[i].health > 0) {
+                summarGirlHealth = summarGirlHealth + worms[i].health;
+            }
+        }
+        g.fillRect(20, 650, (int) (summarGirlHealth * 1.0 / (Worm.START_HEALTH * n / 2) * 100), 20);
+        summarBoyHealth = 0;
+        g.setColor(new Color(5, 48, 203, 255));
+        for (int i = 0; i < n; i += 2) {
+            if (worms[i].health > 0) {
+                summarBoyHealth = summarBoyHealth + worms[i].health;
+            }
+        }
+        g.fillRect(20, 620, (int) (summarBoyHealth * 1.0 / (Worm.START_HEALTH * n / 2) * 100), 20);
         boolean isDead = true;
         for (int i = 0; i < n; i += 2) {
             isDead = isDead && worms[i].health <= 0;
         }
         isOver = isOver || isDead;
+        if (isDead) g.drawImage(girlsWonImage, 0, 0, windowWidth, windowHeight - 20, null);
         isDead = true;
         for (int i = 1; i < n; i += 2) {
             isDead = isDead && worms[i].health <= 0;
         }
         isOver = isOver || isDead;
+        if (isDead) g.drawImage(boysWonImage, 0, 0, windowWidth, windowHeight - 20, null);
+        g.setColor(new Color(111, 222, 255));
+        g.fillRect(465, 630, 70, 40);
+        g.setColor(new Color(0, 0, 0));
+        Font currentFont = g.getFont();
+        Font newFont = currentFont.deriveFont(currentFont.getSize() * 3F);
+        g.setFont(newFont);
+        g.drawString(Integer.toString(MOVE_TIME - time + startTime), 480, 665);
+        if (start) {
+            g.drawImage(startImage, 0, 0, windowWidth, windowHeight, null);
+        }
     }
 }

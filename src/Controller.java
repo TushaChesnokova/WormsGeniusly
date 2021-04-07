@@ -3,17 +3,16 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Controller implements MouseListener, MouseMotionListener {
-    HashMap<Integer, Boolean> keys = new HashMap<>();
+    Set<Integer> keys = new HashSet<>();
     KeyboardFocusManager keyboard;
     World world;
     boolean controllerTry = false;
-    int k = -1;
-    int random1;
-    int counter = 0;
-    public static final double G = 0.3;
+    boolean bombThrown = false;
+    public static final double G = 0.1;
 
     Controller(World world) {
         this.world = world;
@@ -28,50 +27,65 @@ public class Controller implements MouseListener, MouseMotionListener {
                         if (world.controllerWorm.x == 0) {
                             controllerTry = true;
                         } else {
-                            world.controllerWorm.v = -5;
+                            world.controllerWorm.v = -3.5;
                             world.controllerWorm.dt = 0;
                         }
                     }
-                    if (e.getKeyCode() == KeyEvent.VK_LEFT) {
-
+                    keys.add(e.getKeyCode());
+                    if ((world.start) // выбор количества червяков
+                            && ((e.getKeyCode() >= KeyEvent.VK_NUMPAD1)
+                            && (e.getKeyCode() <= KeyEvent.VK_NUMPAD9)
+                            || (e.getKeyCode() >= KeyEvent.VK_1)
+                            && (e.getKeyCode() <= KeyEvent.VK_9))) {
+                        if ((e.getKeyCode() >= KeyEvent.VK_1)
+                                && (e.getKeyCode() <= KeyEvent.VK_9)) {
+                            world.n = (e.getKeyCode() - 48) * 2;
+                        } else {
+                            world.n = (e.getKeyCode() - 96) * 2;
+                        }
+                        world.start = false;
+                        if (world.move == Team.GIRL) {
+                            world.move = Team.BOY;
+                        } else {
+                            world.move = Team.GIRL;
+                        }
+                        world.controllerWorm = new Worm(0, 0);
+                        world.startTime = world.time;
+                        world.startClicked = true;
+                        if (world.dt % 2 == 0) {
+                            world.windV = Math.random() * World.MAX_WIND;
+                        } else {
+                            world.windV = -Math.random() * World.MAX_WIND;
+                        }
                     }
-                    if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
-
-                    }
-                    keys.put(e.getKeyCode(), true);
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD7)) {
-                        counter = 2;
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD7)) { // выбрана бомба
+                        bombThrown = true;
                         world.bombB = true;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD8)) {
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD8)) { // выбран телепорт
                         world.teleportB = true;
-                        counter = 2;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD9)) {
-                        counter = 2;
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD9)) { // выбор яда
                         world.poisonB = true;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD4)) {
-                        counter = 2;
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD4)) { // выбор стрелы
                         world.arrowB = true;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD5)) {
-                        counter = 2;
-                        world.hillB = true;
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD5)) { // выбор индивидуальной аптечки
+                        world.healB = true;
                         world.weapon = false;
                     }
-                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD6)) {
-                        counter = 2;
-                        world.pluralHillB = true;
+                    if ((world.weapon) && (e.getKeyCode() == KeyEvent.VK_NUMPAD6)) { // выбор общей аптечки
+                        world.pluralHealB = true;
                         world.weapon = false;
                     }
                 }
                 if (e.getID() == KeyEvent.KEY_RELEASED) {
-                    keys.put(e.getKeyCode(), false);
+                    keys.remove(e.getKeyCode());
                 }
                 return false;
             }
@@ -80,15 +94,14 @@ public class Controller implements MouseListener, MouseMotionListener {
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        for (int i = 0; i < world.n; i++) {
+        for (int i = 0; i < world.n; i++) { // выбор червяка при ходе
             if ((e.getX() >= world.worms[i].x)
-                    && (e.getX() <= world.worms[i].x + world.worms[i].width)
+                    && (e.getX() <= world.worms[i].x + Worm.WIDTH)
                     && (e.getY() >= world.worms[i].y)
-                    && (e.getY() <= world.worms[i].y + world.worms[i].height)
+                    && (e.getY() <= world.worms[i].y + Worm.HEIGHT)
                     && (world.move == world.worms[i].team)) {
                 controllerTry = false;
                 world.controllerWorm = world.worms[i];
-                k = i;
                 world.controllerWorm.v = 0;
             }
         }
@@ -98,7 +111,7 @@ public class Controller implements MouseListener, MouseMotionListener {
                 && (e.getY() <= world.weaponY + world.weaponWidth)) {
             if ((world.controllerWorm.x != 0) && (world.controllerWorm.y != 0)) {
                 world.weapon = true;
-                counter = 0;
+                bombThrown = false;
             } else {
                 controllerTry = true;
             }
@@ -107,111 +120,110 @@ public class Controller implements MouseListener, MouseMotionListener {
     }
 
     @Override
-    public void mousePressed(MouseEvent e) {
-        if (world.bombB) {
-            counter++;
-            world.bomb.x = e.getX();
-            world.bomb.y = e.getY();
-            world.bomb.rectPressed = true;
-            world.bomb.rectX = 0;
-        }
+    public void mousePressed(MouseEvent e) { //выбор бомбы
         if ((e.getX() >= world.bomb.weaponX)
+                && (world.weapon)
                 && (e.getX() <= world.bomb.weaponX + world.weaponWidth)
                 && (e.getY() >= world.bomb.weaponY)
                 && (e.getY() <= world.bomb.weaponY + world.weaponHeight)) {
             world.weapon = false;
             world.bombB = true;
-            counter++;
+        } else if (world.bombB) { // параметры, нужные для угла броска бомбы
+            bombThrown = true;
+            world.bomb.x = e.getX();
+            world.bomb.y = e.getY();
+            world.bomb.rectPressed = true;
+            world.bomb.rectX = 0;
         }
-        if (world.teleportB) {
+        if (world.teleportB) { // активация телепорта
             world.controllerWorm.x = e.getX();
             world.controllerWorm.y = e.getY();
             world.teleportB = false;
+            world.teleportR = true;
+            world.startTime = world.time;
+            if (world.dt % 2 == 0) {
+                world.windV = Math.random() * World.MAX_WIND;
+            } else {
+                world.windV = -Math.random() * World.MAX_WIND;
+            }
             if (world.move == Team.GIRL) {
                 world.move = Team.BOY;
             } else {
                 world.move = Team.GIRL;
             }
+            world.controllerWorm = new Worm(0, 0);
         }
-        if (world.arrowB) {
-            counter++;
+        if (world.arrowB) { //активация стрелы
             world.arrow.y = e.getY();
             world.arrowB = false;
             world.arrowR = true;
         }
-        if ((e.getX() >= world.teleport.weaponX)
-                && (e.getX() <= world.teleport.weaponX + world.teleport.width)
+        if ((e.getX() >= world.teleport.weaponX) // выброр телепорт
+                && (world.weapon)
+                && (e.getX() <= world.teleport.weaponX + Teleport.WIDTH)
                 && (e.getY() >= world.teleport.weaponY)
-                && (e.getY() <= world.teleport.weaponY + world.teleport.height)) {
+                && (e.getY() <= world.teleport.weaponY + Teleport.HEIGHT)) {
             world.weapon = false;
             world.teleportB = true;
         }
-        if (world.poisonB) {
-            world.poisonB = false;
-            random1 = 1;
-            world.controllerWorm.x = e.getX();
-            world.controllerWorm.y = e.getY();
-            world.teleportB = false;
-            if (world.move == Team.GIRL) {
-                world.move = Team.BOY;
-            } else {
-                world.move = Team.GIRL;
-            }
-        }
-        if ((e.getX() >= world.poison.weaponX)
-                && (e.getX() <= world.poison.weaponX + world.poison.width)
+        if ((e.getX() >= world.poison.weaponX) // выбор яда
+                && (world.weapon)
+                && (e.getX() <= world.poison.weaponX + Poison.WIDTH)
                 && (e.getY() >= world.poison.weaponY)
-                && (e.getY() <= world.poison.weaponY + world.poison.height)) {
+                && (e.getY() <= world.poison.weaponY + Poison.HEIGHT)) {
             world.weapon = false;
             world.poisonB = true;
         }
-        if ((e.getX() >= world.arrow.weaponX)
+        if ((e.getX() >= world.arrow.weaponX) // выбор стрелы
+                && (world.weapon)
                 && (e.getX() <= world.arrow.weaponX + world.weaponWidth)
                 && (e.getY() >= world.arrow.weaponY)
                 && (e.getY() <= world.arrow.weaponY - 10 + world.weaponHeight)) {
             world.weapon = false;
             world.arrowB = true;
         }
-        if ((e.getX() >= world.hill.weaponX)
-                && (e.getX() <= world.hill.weaponX + world.weaponWidth)
-                && (e.getY() >= world.hill.weaponY)
-                && (e.getY() <= world.hill.weaponY + world.weaponHeight)) {
+        if ((e.getX() >= world.heal.weaponX) // выбор индивидуальной аптечки
+                && (world.weapon)
+                && (e.getX() <= world.heal.weaponX + world.weaponWidth)
+                && (e.getY() >= world.heal.weaponY)
+                && (e.getY() <= world.heal.weaponY + world.weaponHeight)) {
             world.weapon = false;
-            world.hillB = true;
+            world.healB = true;
         }
-        if ((e.getX() >= world.pluralHill.weaponXP)
-                && (e.getX() <= world.pluralHill.weaponXP + world.weaponWidth)
-                && (e.getY() >= world.pluralHill.weaponYP)
-                && (e.getY() <= world.pluralHill.weaponYP + world.weaponHeight)) {
+        if ((e.getX() >= world.pluralHeal.weaponXP) // выбор общей аптечки
+                && (world.weapon)
+                && (e.getX() <= world.pluralHeal.weaponXP + world.weaponWidth)
+                && (e.getY() >= world.pluralHeal.weaponYP)
+                && (e.getY() <= world.pluralHeal.weaponYP + world.weaponHeight)) {
             world.weapon = false;
-            world.pluralHillB = true;
-        } else if ((world.pluralHillB)) {
-            world.pluralHill.hillX = e.getX();
-            world.pluralHill.hillY = e.getY();
-            world.pluralHillB = false;
-            world.pluralHillR = true;
+            world.pluralHealB = true;
+        } else if ((world.pluralHealB)) { // активация общей аптечки
+            world.pluralHeal.healX = e.getX();
+            world.pluralHeal.healY = e.getY();
+            world.pluralHealB = false;
+            world.pluralHealR = true;
         }
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if ((world.bombB) && (counter >= 2)) {
+        if ((world.bombB) && (bombThrown)) { // полет бомбы
             world.bomb.rectPressed = false;
-            world.bomb.v = world.bomb.maxv * (world.bomb.rectX * 1.0 / world.bomb.rectWidth);
+            world.bomb.v = Bomb.MAX_V * (world.bomb.rectX * 1.0 / world.bomb.rectWidth);
             world.bomb.rectX = 0;
             world.bombB = false;
             world.bomb.realised = true;
             world.target.catetS = world.bomb.y - world.controllerWorm.y;
-            world.target.catetC = world.bomb.x - world.controllerWorm.x + world.bomb.width / 2;
+            world.target.catetC = world.bomb.x - world.controllerWorm.x + Bomb.SIZE / 2.0;
             world.target.hypotenuse = Math.sqrt(Math.pow(world.target.catetC, 2) + Math.pow(world.target.catetS, 2));
             world.target.sin = world.target.catetS / world.target.hypotenuse;
             world.target.cos = world.target.catetC / world.target.hypotenuse;
-            world.bomb.x = world.controllerWorm.x - world.bomb.width / 2;
+            world.bomb.x = world.controllerWorm.x - Bomb.SIZE / 2.0;
             world.bomb.y = world.controllerWorm.y;
             world.bomb.dt = 0;
             world.bomb.vy = world.bomb.v * world.target.sin;
             world.bomb.vx = world.bomb.v * world.target.cos;
-            counter = 0;
+            bombThrown = false;
         }
     }
 
@@ -227,24 +239,69 @@ public class Controller implements MouseListener, MouseMotionListener {
 
     //проверяем от start до end включительно
     // (Нижняя пустая точка, нашли или нет)
+
+    /**
+     * ищет столкновение червяка с землей
+     *
+     * @param x     иксовая координата червяка при падении
+     * @param start игриковая координата червяка на момент начала падения
+     * @param end   игриковая координата червяка на момент начала падения, если он не приземлился
+     * @return игриковую координату  приземления червяка (если было), столкнулся червяк с землей или нет
+     */
     public Pair<Integer, Boolean> findSurface(int x, int start, int end) {
         for (int y = start; y <= end; y++) {
-            if ((world.landscape.bool.length > x)
+            if ((world.landscape.landscape.length > x)
                     && (x >= 0)
-                    && (world.landscape.bool[x].length > y)
+                    && (world.landscape.landscape[x].length > y)
                     && (y >= 0)
-                    && (world.landscape.bool[x][y])) {
+                    && (world.landscape.landscape[x][y])) {
                 return new Pair<>(y - 1, true);
             }
         }
         return new Pair<>(end, false);
     }
 
+    /**
+     * ищет столкновение бомбы с поверхностью
+     *
+     * @param startX иксовая координата бомбы на момент начала полета
+     * @param startY игриковая координата бомбы на момент начала полета
+     * @param endX   иксовая координата бомбы при столкновении
+     * @param endY   игриковая координата бомбы при столкновении
+     * @return координаты столновения бомбы (если было), столкнулась бомба земли или нет
+     */
+    public Triple<Integer, Integer, Boolean> findSurface(int startX, int startY, int endX, int endY) {
+        if (Math.abs(endX - startX) > (Math.abs(endY - startY))) {
+            for (int x = startX; ((startX < endX) && x <= endX) || ((startX > endX && x >= endX)); x = x + (int) Math.signum(world.bomb.vx)) {
+                int y = (int) (startY + world.target.tg * (x - startX) + G * Math.pow((x - startX), 2) / (2 * Math.pow((world.bomb.vx), 2)));
+                if ((world.landscape.landscape[x].length > x)
+                        && (x >= 0)
+                        && (world.landscape.landscape[y].length > y)
+                        && (y >= 0)
+                        && (world.landscape.landscape[x][y])) {
+                    return new Triple<>(x, y, true);
+                }
+            }
+            return new Triple<>(endX, endY, false);
+        } else {
+            for (int y = startY; ((startY < endY) && y <= endY) || ((startY > endY && y >= endY)); y = y + (int) Math.signum(world.bomb.vy)) {
+                int x = (int) (startX + world.bomb.vx / G * (Math.signum(world.bomb.vx * world.bomb.vy) * Math.sqrt(Math.pow(world.bomb.vy, 2) - 2 * G * (startY - y)) - world.bomb.vy));
+                if ((world.landscape.landscape[x].length > x)
+                        && (x >= 0)
+                        && (world.landscape.landscape[y].length > y)
+                        && (y >= 0)
+                        && (world.landscape.landscape[x][y])) {
+                    return new Triple<>(x, y, true);
+                }
+            }
+            return new Triple<>(endX, endY, false);
+        }
+    }
 
     public void update() {
         for (int i = 0; i < world.n; i++) {
-            if ((world.worms[i].y + world.worms[i].v >= world.windowHeight - world.controllerWorm.height)
-                    || (world.worms[i].x + 2 + world.worms[i].width >= world.windowWidth)
+            if ((world.worms[i].y + world.worms[i].v >= world.windowHeight - Worm.HEIGHT) // червячок упал в воду
+                    || (world.worms[i].x + 2 + Worm.WIDTH >= world.windowWidth)
                     || (world.worms[i].x - 2 <= 0)) {
                 if (world.worms[i].health != 0) {
                     world.watered = true;
@@ -252,52 +309,55 @@ public class Controller implements MouseListener, MouseMotionListener {
                 }
             } else if (world.worms[i].health != 0) {
 
-                Pair<Integer, Boolean> y2 = findSurface(
-                        (int) world.worms[i].x + world.worms[i].width / 2,
-                        (int) (world.worms[i].y) + world.worms[i].height,
-                        (int) (world.worms[i].y + world.worms[i].v) + world.worms[i].height + 1);
-                if (!y2.getValue() || y2.getKey() > world.worms[i].y + world.worms[i].height) {
+                Pair<Integer, Boolean> y2 = findSurface( // реализация падения червяка
+                        (int) world.worms[i].x + Worm.WIDTH / 2,
+                        (int) (world.worms[i].y) + Worm.HEIGHT,
+                        (int) (world.worms[i].y + world.worms[i].v) + Worm.HEIGHT + 1);
+                if (!y2.getValue() || y2.getKey() > world.worms[i].y + Worm.HEIGHT) {
                     world.worms[i].v = world.worms[i].v + G;
                 } else {
                     world.worms[i].v = 0;
                 }
-                world.worms[i].y = y2.getKey() - world.worms[i].height;
+                world.worms[i].y = y2.getKey() - Worm.HEIGHT;
             }
         }
 
-
-        if (keys.containsKey(KeyEvent.VK_RIGHT)) {
-            if (keys.get(KeyEvent.VK_RIGHT)) {
-                if ((world.controllerWorm.health != 0)
-                        && !(world.landscape.bool[(int) world.controllerWorm.x + 1 + world.controllerWorm.width][(int) world.controllerWorm.y + world.controllerWorm.height])) {
-                    if (world.controllerWorm.x == 0) {
-                        controllerTry = true;
-                    } else {
-                        world.controllerWorm.direction = Direction.RIGHT;
-                        world.controllerWorm.x = world.controllerWorm.x + 1;
-                    }
-                } else if ((world.controllerWorm.health != 0)
-                        && !(world.landscape.bool[(int) world.controllerWorm.x + 1 + world.controllerWorm.width][(int) world.controllerWorm.y + world.controllerWorm.height - 2])) {
-                    if (world.controllerWorm.x == 0) {
-                        controllerTry = true;
-                    } else {
-                        world.controllerWorm.direction = Direction.RIGHT;
-                        world.controllerWorm.x = world.controllerWorm.x + 1;
-                        world.controllerWorm.y -= 2;
-                    }
-                }
+        if (world.bomb.realised) { //реализация полета бомбы
+            Triple<Integer, Integer, Boolean> y1 = findSurface(
+                    (int) world.bomb.x,
+                    (int) world.bomb.y,
+                    (int) (world.bomb.x + world.bomb.vx * world.bomb.dt),
+                    (int) (world.bomb.y + world.bomb.vy * world.bomb.dt));
+            if (!y1.getC()) {
+                world.bomb.x = world.bomb.x + (world.bomb.vx - world.windV) * world.bomb.dt;
+                world.bomb.y = world.bomb.y + world.bomb.vy * world.bomb.dt;
+                world.bomb.vy = world.bomb.vy + G;
+                world.bomb.dt = 0;
+            } else {
+                world.bomb.realised = false;
+                world.bomb.explosion = true;
             }
         }
-        if (keys.containsKey(KeyEvent.VK_LEFT)) {
-            if (keys.get(KeyEvent.VK_LEFT)) {
+
+        if (keys.contains(KeyEvent.VK_RIGHT)) { // передвижение червяка направо
+            if ((world.controllerWorm.health != 0)
+                    && !(world.landscape.landscape[(int) world.controllerWorm.x + 1 + Worm.WIDTH][(int) world.controllerWorm.y + Worm.HEIGHT])) {
                 if (world.controllerWorm.x == 0) {
                     controllerTry = true;
                 } else {
-                    if ((world.controllerWorm.health != 0)
-                            && !(world.landscape.bool[(int) world.controllerWorm.x - 2][(int) world.controllerWorm.y + world.controllerWorm.height])) {
-                        world.controllerWorm.direction = Direction.LEFT;
-                        world.controllerWorm.x = world.controllerWorm.x - 2;
-                    }
+                    world.controllerWorm.direction = Direction.RIGHT;
+                    world.controllerWorm.x = world.controllerWorm.x + 1;
+                }
+            }
+        }
+        if (keys.contains(KeyEvent.VK_LEFT)) { // передвижение червяка налево
+            if (world.controllerWorm.x == 0) {
+                controllerTry = true;
+            } else {
+                if ((world.controllerWorm.health != 0)
+                        && !(world.landscape.landscape[(int) world.controllerWorm.x - 2][(int) world.controllerWorm.y + Worm.HEIGHT])) {
+                    world.controllerWorm.direction = Direction.LEFT;
+                    world.controllerWorm.x = world.controllerWorm.x - 1;
                 }
             }
         }
@@ -308,8 +368,8 @@ public class Controller implements MouseListener, MouseMotionListener {
     }
 
     @Override
-    public void mouseMoved(MouseEvent e) {//двигаю
-        world.target.x = e.getX() - world.target.width / 2;
-        world.target.y = e.getY() - world.target.width / 2;
+    public void mouseMoved(MouseEvent e) {//двигаю //координаты отрисовки мишени
+        world.target.x = e.getX() - Target.SIZE / 2;
+        world.target.y = e.getY() - Target.SIZE / 2;
     }
 }

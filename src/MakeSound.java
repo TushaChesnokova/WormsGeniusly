@@ -16,10 +16,7 @@ public class MakeSound {
     private AudioFormat audioFormat;
     private SourceDataLine sourceLine;
 
-    /**
-     * @param filename the name of the file that is going to be played
-     */
-    public void playSound(String filename) {
+    public void playSound(String filename){
 
         String strFilename = filename;
 
@@ -32,7 +29,7 @@ public class MakeSound {
 
         try {
             audioStream = AudioSystem.getAudioInputStream(soundFile);
-        } catch (Exception e) {
+        } catch (Exception e){
             e.printStackTrace();
             System.exit(1);
         }
@@ -62,7 +59,6 @@ public class MakeSound {
                 e.printStackTrace();
             }
             if (nBytesRead >= 0) {
-                @SuppressWarnings("unused")
                 int nBytesWritten = sourceLine.write(abData, 0, nBytesRead);
             }
         }

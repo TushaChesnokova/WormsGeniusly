@@ -1,4 +1,5 @@
 import javax.swing.*;
+import java.awt.event.KeyEvent;
 import java.io.IOException;
 
 public class Main {
@@ -16,8 +17,32 @@ public class Main {
         frame.setVisible(true);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
+        /**
+         * проигрывание звука
+         */
         new Thread(() -> {
             while (true) {
+                if (world.teleportR) {
+                    new MakeSound().playSound("телепорт.wav");
+                    world.teleportR = false;
+                }
+                if (world.startClicked) {
+                    new MakeSound().playSound("startround.wav");
+                    world.startClicked = false;
+                }
+                if (world.c.keys.contains(KeyEvent.VK_LEFT)
+                        && (world.controllerWorm.x != 0)
+                        && (world.controllerWorm.health != 0)
+                        && !(world.landscape.landscape[(int) world.controllerWorm.x - 2][(int) world.controllerWorm.y + Worm.HEIGHT])) {
+                    new MakeSound().playSound("ходьба.wav");
+                }
+                if (world.c.keys.contains(KeyEvent.VK_RIGHT)
+                        && (world.controllerWorm.x != 0)
+                        && (world.controllerWorm.health != 0)
+                        && !(world.landscape.landscape[(int) world.controllerWorm.x - 2][(int) world.controllerWorm.y + Worm.HEIGHT])) {
+                    new MakeSound().playSound("ходьба.wav");
+                }
+                if (world.arrowR) new MakeSound().playSound("стрела.wav");
                 if (world.killed) {
                     new MakeSound().playSound("Убит.wav");
                     world.killed = false;
@@ -40,11 +65,11 @@ public class Main {
                     new MakeSound().playSound("Промазал.wav");
                     world.muff = false;
                 }
-                if (world.lucky){
+                if (world.lucky) {
                     new MakeSound().playSound("Повезло.wav");
-                    world.lucky= false;
+                    world.lucky = false;
                 }
-               try {
+                try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -53,33 +78,17 @@ public class Main {
         }).start();
 
         while (!world.isOver) {
+            world.time = (int) (System.currentTimeMillis()) / 1000;
             world.dt++;
             for (int i = 0; i < world.n; i++) {
                 world.worms[i].dt++;
             }
             world.bomb.dt++;
             for (int i = 0; i < 3; i++)
-                if (world.poisonM[i] != null)
-                    world.poisonM[i].dt++;
-            if (world.bomb.rectPressed == true) {
+                if (world.poisonA[i] != null)
+                    world.poisonA[i].dt++;
+            if (world.bomb.rectPressed) {
                 world.bomb.rectX++;
-                if (world.bomb.rectX >= world.bomb.rectWidth) {
-                    world.bomb.rectPressed = false;
-                    world.bomb.v = world.bomb.maxv * (world.bomb.rectX * 1.0 / world.bomb.rectWidth);
-                    world.bomb.rectX = 0;
-                    world.bombB = false;
-                    world.bomb.realised = true;
-                    world.target.catetS = world.bomb.y + world.target.width / 2 - world.controllerWorm.y;
-                    world.target.catetC = world.bomb.x + world.target.width / 2 - world.controllerWorm.x + world.bomb.width / 2;
-                    world.target.hypotenuse = Math.sqrt(Math.pow(world.target.catetC, 2) + Math.pow(world.target.catetS, 2));
-                    world.target.sin = world.target.catetS / world.target.hypotenuse;
-                    world.target.cos = world.target.catetC / world.target.hypotenuse;
-                    world.bomb.x = world.controllerWorm.x - world.bomb.width / 2;
-                    world.bomb.y = world.controllerWorm.y;
-                    world.bomb.dt = 0;
-                    world.bomb.vy = world.bomb.v * world.target.sin;
-                    world.bomb.vx = world.bomb.v * world.target.cos;
-                }
             }
             world.c.update();
             Thread.sleep(1000 / 60);
