@@ -1,3 +1,5 @@
+import com.sun.deploy.security.SelectableSecurityManager;
+
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -271,31 +273,27 @@ public class Controller implements MouseListener, MouseMotionListener {
      * @return координаты столновения бомбы (если было), столкнулась бомба земли или нет
      */
     public Triple<Integer, Integer, Boolean> findSurface(int startX, int startY, int endX, int endY) {
-        if (Math.abs(endX - startX) > (Math.abs(endY - startY))) {
-            for (int x = startX; ((startX < endX) && x <= endX) || ((startX > endX && x >= endX)); x = x + (int) Math.signum(world.bomb.vx)) {
-                int y = (int) (startY + world.target.tg * (x - startX) + G * Math.pow((x - startX), 2) / (2 * Math.pow((world.bomb.vx), 2)));
-                if ((world.landscape.landscape[x].length > x)
-                        && (x >= 0)
-                        && (world.landscape.landscape[y].length > y)
-                        && (y >= 0)
+        if (Math.abs(startX - endX) > Math.abs(startY - endY)) {
+            for (int x = startX; (x < endX) && (endX > startX) || (x > endX) && (endX < startX); x = x + (int) Math.signum(endX - startX)) {
+                int y = (int) (startY + world.bomb.vy / world.bomb.vx * (x - startX) + G * Math.pow(x - startX, 2) / 2 / Math.pow(world.bomb.vx, 2));
+                if ((x > 0) && (x < world.windowWidth)
+                        && (y > 0) && (y < world.windowHeight)
                         && (world.landscape.landscape[x][y])) {
                     return new Triple<>(x, y, true);
                 }
             }
-            return new Triple<>(endX, endY, false);
         } else {
-            for (int y = startY; ((startY < endY) && y <= endY) || ((startY > endY && y >= endY)); y = y + (int) Math.signum(world.bomb.vy)) {
-                int x = (int) (startX + world.bomb.vx / G * (Math.signum(world.bomb.vx * world.bomb.vy) * Math.sqrt(Math.pow(world.bomb.vy, 2) - 2 * G * (startY - y)) - world.bomb.vy));
-                if ((world.landscape.landscape[x].length > x)
-                        && (x >= 0)
-                        && (world.landscape.landscape[y].length > y)
-                        && (y >= 0)
+            for (int y = startY; ((y < endY) && (endY > startY)) || ((y > endY) && (endY < startY)); y = y + (int) Math.signum(endY - startY)) {
+                double t = 1.0*Math.abs(y-startY)/Math.abs(endY-startY);
+                int x = (int) (startX + world.bomb.vx *t);
+                if ((x > 0) && (x < world.windowWidth)
+                        && (y > 0) && (y < world.windowHeight)
                         && (world.landscape.landscape[x][y])) {
                     return new Triple<>(x, y, true);
                 }
             }
-            return new Triple<>(endX, endY, false);
         }
+        return new Triple<>(endX, endY, false);
     }
 
     public void update() {
