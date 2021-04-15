@@ -305,7 +305,11 @@ public class World extends JPanel {
                 for (int a = 0; a < n; a++) {
                     if ((worms[a].x + Worm.WIDTH > poisonA[i].x - 5) && (worms[a].x < poisonA[i].x + Poison.WIDTH + 5)) {
                         worms[a].health = worms[a].health - 25;
-                        if (worms[a].health <= 0) killed = true;
+                        if (worms[a].health <= 0) {
+                            if (worms[a].x!=0) killed = true;
+                            worms[a].x=0;
+                            worms[a].y=0;
+                        }
                     }
                 }
             }
@@ -347,7 +351,11 @@ public class World extends JPanel {
                     if (worms[j].team != move) {
                         notImpostor = true;
                     }
-                    if (worms[j].health <= 0) killed = true;
+                    if (worms[j].health <= 0) {
+                        if (worms[j].x!=0) killed = true;
+                        worms[j].x=0;
+                        worms[j].y=0;
+                    }
                 }
             }
             if ((!notImpostor) && (!impostor)) {
