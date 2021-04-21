@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Worms Armageddon:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Worms_Armageddon_jar</output-path>
+    <root id="archive" name="Worms Armageddon.jar">
+      <element id="module-output" name="Worms Armageddon" />
+    </root>
+  </artifact>
+</component>

@@ -11,24 +11,13 @@ import javax.sound.sampled.SourceDataLine;
 public class MakeSound {
 
     private final int BUFFER_SIZE = 128000;
-    private File soundFile;
     private AudioInputStream audioStream;
     private AudioFormat audioFormat;
     private SourceDataLine sourceLine;
 
     public void playSound(String filename){
-
-        String strFilename = filename;
-
         try {
-            soundFile = new File(strFilename);
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        try {
-            audioStream = AudioSystem.getAudioInputStream(soundFile);
+            audioStream = AudioSystem.getAudioInputStream(World.class.getResource(filename));
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);
@@ -40,9 +29,6 @@ public class MakeSound {
         try {
             sourceLine = (SourceDataLine) AudioSystem.getLine(info);
             sourceLine.open(audioFormat);
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-            System.exit(1);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
