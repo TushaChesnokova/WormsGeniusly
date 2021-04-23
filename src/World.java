@@ -307,8 +307,6 @@ public class World extends JPanel {
                         worms[a].health = worms[a].health - 25;
                         if (worms[a].health <= 0) {
                             if (worms[a].x!=0) killed = true;
-                            worms[a].x=0;
-                            worms[a].y=0;
                         }
                     }
                 }
@@ -353,8 +351,6 @@ public class World extends JPanel {
                     }
                     if (worms[j].health <= 0) {
                         if (worms[j].x!=0) killed = true;
-                        worms[j].x=0;
-                        worms[j].y=0;
                     }
                 }
             }

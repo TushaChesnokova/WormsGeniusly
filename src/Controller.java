@@ -304,8 +304,6 @@ public class Controller implements MouseListener, MouseMotionListener {
                 if (world.worms[i].health != 0) {
                     world.watered = true;
                     world.worms[i].health = 0;
-                    world.worms[i].x=0;
-                    world.worms[i].y=0;
                 }
             } else if (world.worms[i].health != 0) {
 
