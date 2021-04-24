@@ -280,7 +280,7 @@ public class World extends JPanel {
                 poisonA[i] = new Poison(this);
             }
             for (int i = 0; i < 3; i++) {
-                random = (int) (Math.random() * windowWidth-Poison.WIDTH);
+                random = (int) (Math.random() * (windowWidth-Poison.WIDTH));
                 poisonA[i].x = random;
                 poisonB = false;
                 poisonR = true;
